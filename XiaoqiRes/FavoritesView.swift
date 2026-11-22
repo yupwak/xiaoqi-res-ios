@@ -1,8 +1,18 @@
 import SwiftUI
+import UIKit
 
 struct FavoritesView: View {
     @Environment(AppStore.self) private var store
     @State private var detailApp: ResApp?
+
+    private func startDownload(_ app: ResApp) {
+        guard let url = store.downloadURL(for: app) else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        if app.no_track != true {
+            Task { await APIClient.shared.trackDownload(appID: app.id) }
+        }
+        UIApplication.shared.open(url) { _ in }
+    }
 
     var body: some View {
         NavigationStack {
@@ -20,7 +30,9 @@ struct FavoritesView: View {
                                 Button {
                                     detailApp = app
                                 } label: {
-                                    ResourceRow(app: app)
+                                    ResourceRow(app: app) {
+                                        startDownload(app)
+                                    }
                                 }
                                 .buttonStyle(.plain)
                                 .swipeActions(edge: .trailing) {

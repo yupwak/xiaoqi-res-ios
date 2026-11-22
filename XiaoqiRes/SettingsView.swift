@@ -55,7 +55,7 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Text("非官方客户端，资源信息由站点接口提供。")
+                    Text("资源数据由 6778.top 提供。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
