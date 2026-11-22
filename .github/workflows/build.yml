@@ -1,0 +1,87 @@
+name: build-ios
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Environment
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        run: |
+          set -e
+          URL=$(curl -fsSL https://api.github.com/repos/yonaskolb/XcodeGen/releases/latest \
+            | grep -o '"browser_download_url": *"[^"]*xcodegen\.zip"' | head -1 \
+            | sed 's/.*"\(https[^"]*\)"/\1/')
+          echo "xcodegen: $URL"
+          if [ -n "$URL" ]; then
+            curl -fsSL -o /tmp/xcodegen.zip "$URL"
+            unzip -q -o /tmp/xcodegen.zip -d /tmp/xg
+            chmod +x /tmp/xg/bin/xcodegen
+            echo "XCODEGEN=/tmp/xg/bin/xcodegen" >> $GITHUB_ENV
+          else
+            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
+            echo "XCODEGEN=xcodegen" >> $GITHUB_ENV
+          fi
+          $XCODEGEN --version
+
+      - name: Generate app icon
+        run: node tools/mkicon.mjs XiaoqiRes/Assets.xcassets/AppIcon.appiconset/icon1024.png
+
+      - name: Generate Xcode project
+        run: $XCODEGEN generate --spec project.yml
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild -project XiaoqiRes.xcodeproj \
+            -scheme XiaoqiRes \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee build.log
+
+      - name: Package unsigned IPA
+        if: success()
+        run: |
+          set -e
+          APP=build/Build/Products/Release-iphoneos/XiaoqiRes.app
+          ls -la "$APP"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$APP/Info.plist" || true
+          cd build/Build/Products/Release-iphoneos
+          zip -qry "$GITHUB_WORKSPACE/XiaoqiRes-unsigned.ipa" XiaoqiRes.app
+          cd "$GITHUB_WORKSPACE"
+          ls -lh XiaoqiRes-unsigned.ipa
+          unzip -l XiaoqiRes-unsigned.ipa | head -20
+
+      - name: Publish release
+        if: always()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: build ${{ github.run_number }}
+          body: |
+            workflow: ${{ github.workflow }}
+            commit: ${{ github.sha }}
+            run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          fail_on_unmatched_files: false
+          files: |
+            XiaoqiRes-unsigned.ipa
+            build.log
