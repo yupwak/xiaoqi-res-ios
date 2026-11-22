@@ -21,6 +21,13 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 0) {
+                    Text(headerTitle)
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 10)
+
                     if !store.bannerItems.isEmpty && tagFilter == nil {
                         banner
                     }
@@ -45,8 +52,8 @@ struct HomeView: View {
                 .padding(.bottom, 28)
             }
             .background(Color(.systemBackground))
-            .navigationTitle(headerTitle)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .refreshable { await store.load() }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {

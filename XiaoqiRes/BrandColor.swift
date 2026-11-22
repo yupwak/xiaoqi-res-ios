@@ -11,7 +11,11 @@ extension Color {
         })
     }
 
-    /// 列表「获取」按钮：底 #1C1C1E / 字 #0A8FFD
-    static let getButtonFill = Color(red: 28.0 / 255.0, green: 28.0 / 255.0, blue: 30.0 / 255.0)
+    /// 列表「获取」：统一蓝字 #0A8FFD；底色白天 #EEEEEF / 夜间 #1C1C1E
     static let getButtonText = Color(red: 10.0 / 255.0, green: 143.0 / 255.0, blue: 253.0 / 255.0)
+    static let getButtonFill = Color(UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 28.0 / 255.0, green: 28.0 / 255.0, blue: 30.0 / 255.0, alpha: 1)
+            : UIColor(red: 238.0 / 255.0, green: 238.0 / 255.0, blue: 239.0 / 255.0, alpha: 1)
+    })
 }
