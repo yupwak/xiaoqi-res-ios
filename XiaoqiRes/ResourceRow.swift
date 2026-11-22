@@ -34,10 +34,10 @@ struct ResourceRow: View {
             } label: {
                 Text("获取")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.getButtonText)
                     .padding(.horizontal, 20)
                     .frame(height: 32)
-                    .background(Capsule().fill(Color.getButton))
+                    .background(Capsule().fill(Color.getButtonFill))
             }
             .buttonStyle(.borderless)
         }

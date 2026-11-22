@@ -55,12 +55,9 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("小七资源库由 6778.top 提供")
-                        Text("开发者：Lxp")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    Text("小七资源库由 6778.top 提供 · 开发者：Lxp")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("设置")

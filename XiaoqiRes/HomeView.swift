@@ -4,12 +4,12 @@ import UIKit
 struct HomeView: View {
     @Environment(AppStore.self) private var store
 
-    @State private var query = ""
     @State private var tagFilter: String?
     @State private var detailApp: ResApp?
+    @State private var showSearch = false
 
     private var results: [ResApp] {
-        store.filtered(query: query, tag: tagFilter)
+        store.filtered(query: "", tag: tagFilter)
     }
 
     private var headerTitle: String {
@@ -21,7 +21,7 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if !store.bannerItems.isEmpty && query.isEmpty && tagFilter == nil {
+                    if !store.bannerItems.isEmpty && tagFilter == nil {
                         banner
                     }
 
@@ -47,14 +47,20 @@ struct HomeView: View {
             .background(Color(.systemBackground))
             .navigationTitle(headerTitle)
             .navigationBarTitleDisplayMode(.large)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                searchBar
-            }
             .refreshable { await store.load() }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        showSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
                     filterMenu
                 }
+            }
+            .navigationDestination(isPresented: $showSearch) {
+                SearchView()
+                    .environment(store)
             }
             .sheet(item: $detailApp) { app in
                 NavigationStack {
@@ -63,43 +69,6 @@ struct HomeView: View {
                 .environment(store)
             }
         }
-    }
-
-    // MARK: - 独立搜索条
-
-    private var searchBar: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.secondary)
-
-            TextField("", text: $query, prompt: Text(store.searchPlaceholder).foregroundStyle(.secondary))
-                .font(.system(size: 16))
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-
-            if !query.isEmpty {
-                Button {
-                    query = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 15))
-                        .foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(height: 36)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(.tertiarySystemFill))
-        )
-        .padding(.horizontal, 16)
-        .padding(.top, 2)
-        .padding(.bottom, 8)
-        .background(Color(.systemBackground))
     }
 
     // MARK: - 轮播
@@ -208,7 +177,7 @@ struct HomeView: View {
             Image(systemName: "magnifyingglass")
                 .font(.title2)
                 .foregroundStyle(.secondary)
-            Text(query.isEmpty ? "暂无资源" : "没有匹配「\(query)」的结果")
+            Text("暂无资源")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
