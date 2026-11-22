@@ -47,7 +47,9 @@ struct HomeView: View {
             .background(Color(.systemBackground))
             .navigationTitle(headerTitle)
             .navigationBarTitleDisplayMode(.large)
-            .searchable(text: $query, prompt: Text(store.searchPlaceholder))
+            .safeAreaInset(edge: .top, spacing: 0) {
+                searchBar
+            }
             .refreshable { await store.load() }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -61,6 +63,43 @@ struct HomeView: View {
                 .environment(store)
             }
         }
+    }
+
+    // MARK: - 独立搜索条
+
+    private var searchBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            TextField("", text: $query, prompt: Text(store.searchPlaceholder).foregroundStyle(.secondary))
+                .font(.system(size: 16))
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.search)
+
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15))
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 36)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(.tertiarySystemFill))
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 2)
+        .padding(.bottom, 8)
+        .background(Color(.systemBackground))
     }
 
     // MARK: - 轮播

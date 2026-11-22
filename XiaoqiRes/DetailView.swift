@@ -143,10 +143,10 @@ struct DetailView: View {
                 startDownload()
             } label: {
                 Text(store.downloadURL(for: app) == nil ? "暂无下载地址" : "立即获取")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(store.downloadURL(for: app) == nil ? Color.secondary : Color.white)
-                    .padding(.horizontal, 28)
-                    .frame(height: 44)
+                    .padding(.horizontal, 34)
+                    .frame(height: 48)
                     .background(
                         Capsule().fill(store.downloadURL(for: app) == nil ? Color(.tertiarySystemFill) : Color.getButton)
                     )
