@@ -24,20 +24,27 @@ jobs:
       - name: Install XcodeGen
         run: |
           set -e
-          URL=$(curl -fsSL https://api.github.com/repos/yonaskolb/XcodeGen/releases/latest \
-            | grep -o '"browser_download_url": *"[^"]*xcodegen\.zip"' | head -1 \
-            | sed 's/.*"\(https[^"]*\)"/\1/')
-          echo "xcodegen: $URL"
-          if [ -n "$URL" ]; then
-            curl -fsSL -o /tmp/xcodegen.zip "$URL"
-            unzip -q -o /tmp/xcodegen.zip -d /tmp/xg
-            chmod +x /tmp/xg/bin/xcodegen
-            echo "XCODEGEN=/tmp/xg/bin/xcodegen" >> $GITHUB_ENV
-          else
-            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
-            echo "XCODEGEN=xcodegen" >> $GITHUB_ENV
+          if command -v xcodegen >/dev/null 2>&1; then
+            echo "XCODEGEN=xcodegen" >> "$GITHUB_ENV"
+            xcodegen --version
+            exit 0
           fi
-          $XCODEGEN --version
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen >/dev/null 2>&1 || true
+          if command -v xcodegen >/dev/null 2>&1; then
+            echo "XCODEGEN=xcodegen" >> "$GITHUB_ENV"
+            xcodegen --version
+            exit 0
+          fi
+          URL=$(curl -fsSL https://api.github.com/repos/yonaskolb/XcodeGen/releases/latest \
+            | jq -r '.assets[] | select(.name | test("xcodegen.*\\.zip")) | .browser_download_url' | head -1)
+          echo "fallback zip: $URL"
+          curl -fsSL -o /tmp/xcodegen.zip "$URL"
+          unzip -q -o /tmp/xcodegen.zip -d /tmp/xg
+          BIN=$(find /tmp/xg -type f -name xcodegen | head -1)
+          echo "found: $BIN"
+          chmod +x "$BIN"
+          echo "XCODEGEN=$BIN" >> "$GITHUB_ENV"
+          "$BIN" --version
 
       - name: Generate app icon
         run: node tools/mkicon.mjs XiaoqiRes/Assets.xcassets/AppIcon.appiconset/icon1024.png
@@ -48,6 +55,8 @@ jobs:
       - name: Build
         run: |
           set -o pipefail
+          ls -la
+          ls -la XiaoqiRes | head -30
           xcodebuild -project XiaoqiRes.xcodeproj \
             -scheme XiaoqiRes \
             -configuration Release \
