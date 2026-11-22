@@ -142,17 +142,20 @@ struct DetailView: View {
             Button {
                 startDownload()
             } label: {
-                Text(store.downloadURL(for: app) == nil ? "暂无下载地址" : "获取")
-                    .font(.system(size: 15, weight: .semibold))
-                    .frame(minWidth: 132, minHeight: 42)
+                Text(store.downloadURL(for: app) == nil ? "暂无下载地址" : "立即获取")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(store.downloadURL(for: app) == nil ? Color.secondary : Color.white)
+                    .padding(.horizontal, 28)
+                    .frame(height: 44)
+                    .background(
+                        Capsule().fill(store.downloadURL(for: app) == nil ? Color(.tertiarySystemFill) : Color.getButton)
+                    )
             }
-            .buttonStyle(.borderedProminent)
-            .buttonBorderShape(.capsule)
+            .buttonStyle(.plain)
             .disabled(store.downloadURL(for: app) == nil)
             Spacer()
         }
-        .padding(.vertical, 6)
-        .background(.bar)
+        .padding(.vertical, 8)
     }
 
     // MARK: - 动作

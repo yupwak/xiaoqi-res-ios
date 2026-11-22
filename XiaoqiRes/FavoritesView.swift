@@ -31,7 +31,7 @@ struct FavoritesView: View {
                                     detailApp = app
                                 } label: {
                                     ResourceRow(app: app) {
-                                        startDownload(app)
+                                        detailApp = app
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -51,6 +51,7 @@ struct FavoritesView: View {
                 }
             }
             .navigationTitle("收藏")
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(item: $detailApp) { app in
                 NavigationStack {
                     DetailView(app: app)

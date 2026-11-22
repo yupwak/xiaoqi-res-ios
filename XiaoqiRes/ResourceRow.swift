@@ -32,20 +32,15 @@ struct ResourceRow: View {
             Button {
                 onGet()
             } label: {
-                Text(hasLink ? "获取" : "—")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(hasLink ? Color.accentColor : Color.secondary)
-                    .padding(.horizontal, 14)
-                    .frame(height: 28)
-                    .background(
-                        Capsule().fill(hasLink ? Color.accentColor.opacity(0.14) : Color(.tertiarySystemFill))
-                    )
+                Text("获取")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 20)
+                    .frame(height: 32)
+                    .background(Capsule().fill(Color.getButton))
             }
             .buttonStyle(.borderless)
-            .disabled(!hasLink)
         }
         .contentShape(Rectangle())
     }
-
-    private var hasLink: Bool { store.downloadURL(for: app) != nil }
 }

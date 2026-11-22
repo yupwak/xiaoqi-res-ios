@@ -34,35 +34,26 @@ struct HomeView: View {
                     } else {
                         ForEach(results) { app in
                             ResourceRow(app: app) {
-                                startDownload(app)
+                                detailApp = app
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 10)
                             .onTapGesture { detailApp = app }
-
-                            Divider()
-                                .padding(.leading, 92)
-                                .padding(.trailing, 20)
                         }
                     }
                 }
                 .padding(.bottom, 28)
             }
             .background(Color(.systemBackground))
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(headerTitle)
+            .navigationBarTitleDisplayMode(.large)
+            .searchable(text: $query, prompt: Text(store.searchPlaceholder))
+            .refreshable { await store.load() }
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text(headerTitle)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.primary)
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     filterMenu
                 }
             }
-            .searchable(text: $query, prompt: Text(store.searchPlaceholder))
-            .refreshable { await store.load() }
             .sheet(item: $detailApp) { app in
                 NavigationStack {
                     DetailView(app: app)
@@ -184,16 +175,5 @@ struct HomeView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
-    }
-
-    // MARK: - 动作
-
-    private func startDownload(_ app: ResApp) {
-        guard let url = store.downloadURL(for: app) else { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        if app.no_track != true {
-            Task { await APIClient.shared.trackDownload(appID: app.id) }
-        }
-        UIApplication.shared.open(url) { _ in }
     }
 }
