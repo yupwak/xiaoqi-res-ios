@@ -7,45 +7,32 @@ struct HomeView: View {
     @State private var tagFilter: String?
     @State private var detailApp: ResApp?
 
-    private let columns = [GridItem(.adaptive(minimum: 96, maximum: 140), spacing: 16, alignment: .top)]
-
     private var results: [ResApp] {
         store.filtered(query: query, tag: tagFilter)
     }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 18) {
-                    if store.isLoading && store.apps.isEmpty {
-                        loadingGrid
-                    } else if let err = store.loadError, store.apps.isEmpty {
-                        errorView(err)
-                    } else if results.isEmpty {
-                        emptyView
-                    } else {
-                        LazyVGrid(columns: columns, spacing: 22) {
-                            ForEach(results) { app in
-                                Button {
-                                    detailApp = app
-                                } label: {
-                                    ResourceCell(app: app)
-                                }
-                                .buttonStyle(.plain)
-                            }
+            List {
+                if store.isLoading && store.apps.isEmpty {
+                    loadingRows
+                } else if let err = store.loadError, store.apps.isEmpty {
+                    errorRow(err)
+                } else if results.isEmpty {
+                    emptyRow
+                } else {
+                    ForEach(results) { app in
+                        Button {
+                            detailApp = app
+                        } label: {
+                            ResourceRow(app: app)
                         }
-
-                        Text("数据来自 6778.top")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .padding(.top, 8)
+                        .buttonStyle(.plain)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
             }
-            .background(Color(.systemGroupedBackground))
+            .listStyle(.plain)
             .navigationTitle(store.siteTitle)
             .searchable(text: $query, prompt: Text(store.searchPlaceholder))
             .refreshable { await store.load() }
@@ -83,23 +70,24 @@ struct HomeView: View {
         }
     }
 
-    private var loadingGrid: some View {
-        LazyVGrid(columns: columns, spacing: 22) {
-            ForEach(0..<9, id: \.self) { _ in
-                VStack(spacing: 8) {
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
-                        .fill(Color(.tertiarySystemFill))
-                        .frame(width: 64, height: 64)
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(.tertiarySystemFill))
-                        .frame(width: 48, height: 10)
+    private var loadingRows: some View {
+        ForEach(0..<6, id: \.self) { _ in
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color(.tertiarySystemFill))
+                    .frame(width: 52, height: 52)
+                VStack(alignment: .leading, spacing: 6) {
+                    RoundedRectangle(cornerRadius: 4).fill(Color(.tertiarySystemFill)).frame(width: 110, height: 12)
+                    RoundedRectangle(cornerRadius: 4).fill(Color(.tertiarySystemFill)).frame(width: 170, height: 10)
                 }
-                .frame(maxWidth: .infinity)
+                Spacer()
             }
+            .padding(.vertical, 6)
+            .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 4, trailing: 20))
         }
     }
 
-    private func errorView(_ message: String) -> some View {
+    private func errorRow(_ message: String) -> some View {
         VStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.title2)
@@ -115,10 +103,12 @@ struct HomeView: View {
             .controlSize(.small)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 80)
+        .padding(.vertical, 40)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
-    private var emptyView: some View {
+    private var emptyRow: some View {
         VStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.title2)
@@ -128,6 +118,8 @@ struct HomeView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 80)
+        .padding(.vertical, 40)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 }

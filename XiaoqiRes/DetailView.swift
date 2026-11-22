@@ -41,6 +41,9 @@ struct DetailView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            bottomBar
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("关闭") { dismiss() }
@@ -82,28 +85,10 @@ struct DetailView: View {
                         tagChip(req)
                     }
                 }
-
-                getButton
-                    .padding(.top, 2)
             }
 
             Spacer(minLength: 0)
         }
-    }
-
-    private var getButton: some View {
-        Button {
-            startDownload()
-        } label: {
-            Text(store.downloadURL(for: app) == nil ? "暂无地址" : "获取")
-                .font(.system(size: 14, weight: .semibold))
-                .padding(.horizontal, 16)
-                .frame(height: 30)
-        }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.capsule)
-        .controlSize(.small)
-        .disabled(store.downloadURL(for: app) == nil)
     }
 
     private func tagChip(_ text: String) -> some View {
@@ -147,6 +132,27 @@ struct DetailView: View {
         }
         .scrollTargetBehavior(.viewAligned)
         .scrollIndicators(.hidden)
+    }
+
+    // MARK: - 底部
+
+    private var bottomBar: some View {
+        HStack {
+            Spacer()
+            Button {
+                startDownload()
+            } label: {
+                Text(store.downloadURL(for: app) == nil ? "暂无下载地址" : "获取")
+                    .font(.system(size: 15, weight: .semibold))
+                    .frame(minWidth: 132, minHeight: 42)
+            }
+            .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.capsule)
+            .disabled(store.downloadURL(for: app) == nil)
+            Spacer()
+        }
+        .padding(.vertical, 6)
+        .background(.bar)
     }
 
     // MARK: - 动作
