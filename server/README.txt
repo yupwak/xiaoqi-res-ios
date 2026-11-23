@@ -15,3 +15,12 @@
 想要 App 完全关闭也能收到：编辑 push_config.php，填 Key ID / Team ID，
 把 AuthKey_xxx.p8 放到 Adminsdata/AuthKey.p8，PUSH_APNS_ENABLED 改 true。
 不配也能用：后台发的消息进收件箱，App 打开时拉取并本地弹通知。
+
+赞助名单（新增）
+  Admins/sponsors.php -> 网站根目录/Admins/sponsors.php  后台录入页
+  data/sponsors.json  -> 网站根目录/data/sponsors.json   初值 []（若不存在会自动创建）
+  imgdata/sponsors/   -> 网站根目录/imgdata/sponsors/    头像目录（需可写）
+
+nginx 白名单新增放行：
+  front: get_sponsors
+  admin: get_sponsors, save_sponsor, delete_sponsor
