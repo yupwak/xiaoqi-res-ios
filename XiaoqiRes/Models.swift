@@ -55,3 +55,22 @@ struct APIResponse: Codable {
     var data: SiteData?
     var msg: String?
 }
+
+struct Sponsor: Codable, Identifiable, Hashable {
+    var id: String
+    var name: String
+    var amount: Double
+    var avatar: String?
+    var note: String?
+    var ts: Int?
+}
+
+struct SponsorPayload: Decodable {
+    var sponsors: [Sponsor]
+    var total: Int?
+}
+
+struct SponsorEnvelope: Decodable {
+    var code: Int
+    var data: SponsorPayload?
+}

@@ -49,11 +49,10 @@ struct DetailView: View {
                 Button("关闭") { dismiss() }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    store.toggleFavorite(app)
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                } label: {
-                    Image(systemName: store.isFavorite(app) ? "heart.fill" : "heart")
+                if let url = store.downloadURL(for: app) {
+                    ShareLink(item: url) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
                 }
             }
         }

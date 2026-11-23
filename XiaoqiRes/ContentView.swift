@@ -11,8 +11,8 @@ struct ContentView: View {
                 .tabItem { Label("资源", systemImage: "square.grid.2x2") }
                 .tag(0)
 
-            FavoritesView()
-                .tabItem { Label("收藏", systemImage: "heart") }
+            SponsorsView()
+                .tabItem { Label("赞助", systemImage: "crown") }
                 .tag(1)
 
             SettingsView()

@@ -8,6 +8,7 @@ final class AppStore {
     var apps: [ResApp] = []
     var tags: [ResTag] = []
     var carousel: [CarouselItem] = []
+    var sponsors: [Sponsor] = []
 
     var isLoading = false
     var hasLoaded = false
@@ -26,8 +27,8 @@ final class AppStore {
         tags.sorted { ($0.sort ?? 0) < ($1.sort ?? 1) }
     }
     var bannerItems: [CarouselItem] { carousel }
-    var favoriteApps: [ResApp] {
-        apps.filter { favorites.contains($0.id) }
+    var sponsorTotal: Double {
+        sponsors.reduce(0) { $0 + $1.amount }
     }
     var totalDownloads: Int {
         apps.reduce(0) { $0 + ($1.download_count ?? 0) }
@@ -59,6 +60,7 @@ final class AppStore {
             settings = d.settings
             tags = d.tags
             carousel = d.carousel ?? []
+            sponsors = (try? await APIClient.shared.getSponsors()) ?? sponsors
             apps = d.apps.sorted { a, b in
                 let ta = a.is_top ?? false, tb = b.is_top ?? false
                 if ta != tb { return ta }

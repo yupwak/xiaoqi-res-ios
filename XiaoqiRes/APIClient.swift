@@ -115,4 +115,22 @@ struct APIClient {
         guard let env = try? JSONDecoder().decode(Envelope.self, from: data), let payload = env.data else { return nil }
         return payload.messages
     }
+
+    func getSponsors() async throws -> [Sponsor] {
+        let data = try await post(["source": "front", "action": "get_sponsors"])
+        do {
+            let env = try JSONDecoder().decode(SponsorEnvelope.self, from: data)
+            guard env.code == 0, let payload = env.data else {
+                throw APIError.server("赞助名单读取失败")
+            }
+            return payload.sponsors.sorted {
+                if $0.amount == $1.amount { return ($0.ts ?? 0) > ($1.ts ?? 0) }
+                return $0.amount > $1.amount
+            }
+        } catch let e as APIError {
+            throw e
+        } catch {
+            throw APIError.decoding(error.localizedDescription)
+        }
+    }
 }
