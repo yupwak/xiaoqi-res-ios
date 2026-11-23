@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 enum APIError: LocalizedError {
     case network(String)
@@ -81,5 +82,37 @@ struct APIClient {
     func trackDownload(appID: Int) async {
         _ = try? await post(["source": "front", "action": "track_download", "app_id": String(appID)])
         _ = try? await post(["source": "front", "action": "add_download", "rid": String(appID)])
+    }
+
+    // MARK: - 推送
+
+    func registerDevice(token: String) async {
+        var fields = [
+            "source": "front",
+            "action": "register_device",
+            "token": token,
+            "platform": "ios",
+            "model": UIDevice.current.model,
+            "name": UIDevice.current.name,
+            "version": (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "",
+            "bundle": (Bundle.main.infoDictionary?["CFBundleIdentifier"] as? String) ?? ""
+        ]
+        fields["nonce"] = UUID().uuidString
+        _ = try? await post(fields)
+    }
+
+    func pullMessages(token: String) async -> [PushMessage]? {
+        guard let data = try? await post([
+            "source": "front",
+            "action": "pull_messages",
+            "token": token
+        ]) else { return nil }
+        struct Envelope: Decodable {
+            struct Payload: Decodable { let messages: [PushMessage] }
+            let code: Int
+            let data: Payload?
+        }
+        guard let env = try? JSONDecoder().decode(Envelope.self, from: data), let payload = env.data else { return nil }
+        return payload.messages
     }
 }
