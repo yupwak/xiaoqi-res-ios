@@ -74,9 +74,13 @@ jobs:
           ls -la "$APP"
           /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist" || true
           /usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$APP/Info.plist" || true
-          cd build/Build/Products/Release-iphoneos
-          zip -qry "$GITHUB_WORKSPACE/XiaoqiRes-unsigned.ipa" XiaoqiRes.app
+          rm -rf "$GITHUB_WORKSPACE/out"
+          mkdir -p "$GITHUB_WORKSPACE/out/Payload"
+          cp -R build/Build/Products/Release-iphoneos/XiaoqiRes.app "$GITHUB_WORKSPACE/out/Payload/"
+          cd "$GITHUB_WORKSPACE/out"
+          zip -qry "$GITHUB_WORKSPACE/XiaoqiRes-unsigned.ipa" Payload
           cd "$GITHUB_WORKSPACE"
+          unzip -l XiaoqiRes-unsigned.ipa | head -8
           ls -lh XiaoqiRes-unsigned.ipa
           unzip -l XiaoqiRes-unsigned.ipa | head -20
 

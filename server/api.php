@@ -1,6 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/push_lib.php';
+// 推送模块是可选文件：缺失时不影响其它接口
+if (is_file(__DIR__ . '/push_lib.php') && is_file(__DIR__ . '/push_config.php')) {
+    require_once __DIR__ . '/push_lib.php';
+}
 security_headers();
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') json_not_found();
 $source = $_POST['source'] ?? 'front';
@@ -9,12 +12,40 @@ if ($source === 'admin' && !admin_ip_allowed()) json_not_found();
 session_guard();
 $is_admin = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true;
 if ($source !== 'front' && $source !== 'admin') json_not_found();
-$front_actions = ['get_data', 'track_visit', 'track_download', 'add_download', 'register_device', 'pull_messages'];
+$front_actions = ['get_data', 'track_visit', 'track_download', 'add_download', 'register_device', 'pull_messages', 'get_sponsors'];
 $admin_actions = ['login', 'logout', 'change_credentials', 'get_stats', 'reset_stats',
     'save_settings', 'get_carousel', 'save_carousel', 'delete_carousel',
     'get_tags', 'save_tags', 'get_apps', 'save_app', 'delete_app', 'get_data',
-    'push_send', 'push_devices', 'push_delete_device', 'push_clear', 'push_preview'];
+    'push_send', 'push_devices', 'push_delete_device', 'push_clear', 'push_preview',
+    'get_sponsors', 'save_sponsor', 'delete_sponsor'];
 $allowed = $source === 'admin' ? $admin_actions : $front_actions;
+
+function sponsors_all() {
+    $list = load_json('sponsors', []);
+    if (!is_array($list)) $list = [];
+    usort($list, function ($a, $b) {
+        $am = (float)($a['amount'] ?? 0);
+        $bm = (float)($b['amount'] ?? 0);
+        if ($am == $bm) return (int)($b['ts'] ?? 0) <=> (int)($a['ts'] ?? 0);
+        return $bm <=> $am;
+    });
+    return $list;
+}
+function sponsors_out() {
+    $out = [];
+    foreach (sponsors_all() as $s) {
+        $out[] = [
+            'id' => (string)($s['id'] ?? ''),
+            'name' => (string)($s['name'] ?? ''),
+            'amount' => (float)($s['amount'] ?? 0),
+            'avatar' => img_url($s['avatar'] ?? ''),
+            'note' => (string)($s['note'] ?? ''),
+            'ts' => (int)($s['ts'] ?? 0)
+        ];
+    }
+    return $out;
+}
+
 if (!in_array($action, $allowed, true)) json_not_found();
 if ($source === 'admin' && !in_array($action, ['login', 'logout'], true) && !$is_admin) {
     json_response(401, null, '请先登录');
@@ -27,7 +58,11 @@ if ($source === 'admin' && $action !== 'login') {
     }
 }
 if ($source === 'front') {
+    if ($action === 'get_sponsors') {
+        json_response(0, ['sponsors' => sponsors_out(), 'total' => count(sponsors_all())]);
+    }
     if ($action === 'register_device') {
+        if (!function_exists('push_register')) json_response(1, null, '推送模块未安装');
         $token = strtolower(trim((string)($_POST['token'] ?? '')));
         if ($token === '') json_response(1, null, '缺少 token');
         $ok = push_register($token, [
@@ -41,6 +76,7 @@ if ($source === 'front') {
         json_response(0, ['total' => count(push_devices())], 'ok');
     }
     if ($action === 'pull_messages') {
+        if (!function_exists('push_messages_for')) json_response(1, null, '推送模块未安装');
         $token = strtolower(trim((string)($_POST['token'] ?? '')));
         if ($token === '') json_response(1, null, '缺少 token');
         json_response(0, ['messages' => push_messages_for($token)]);
@@ -148,7 +184,60 @@ if ($source === 'front') {
     }
 }
 if ($source === 'admin') {
+    if ($action === 'get_sponsors') {
+        json_response(0, ['sponsors' => sponsors_all(), 'total' => count(sponsors_all())]);
+    }
+    if ($action === 'save_sponsor') {
+        $name = clean_text($_POST['name'] ?? '', 40);
+        $amount = (float)($_POST['amount'] ?? 0);
+        $avatar = clean_text($_POST['avatar'] ?? '', 300);
+        $note = clean_text($_POST['note'] ?? '', 120);
+        $id = clean_text($_POST['id'] ?? '', 40);
+        $qq = preg_replace('/\D/', '', (string)($_POST['qq'] ?? ''));
+        if (strlen($qq) < 5 || strlen($qq) > 12) $qq = '';
+        // 没给头像就按 QQ 号采集
+        if ($avatar === '' && $qq !== '') {
+            $avatar = 'https://q1.qlogo.cn/g?b=qq&nk=' . $qq . '&s=640';
+        }
+        if ($name === '') json_response(1, null, '赞助者名字不能为空');
+        if ($amount < 0) $amount = 0;
+        $list = load_json('sponsors', []);
+        if (!is_array($list)) $list = [];
+        if ($id !== '') {
+            $found = false;
+            foreach ($list as $i => $s) {
+                if ((string)($s['id'] ?? '') === $id) {
+                    $list[$i] = array_merge($s, ['name' => $name, 'amount' => $amount, 'avatar' => $avatar, 'note' => $note, 'qq' => $qq]);
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) $id = '';
+        }
+        if ($id === '') {
+            $list[] = [
+                'id' => date('YmdHis') . substr(md5(uniqid('', true)), 0, 4),
+                'name' => $name,
+                'amount' => $amount,
+                'avatar' => $avatar,
+                'note' => $note,
+                'qq' => $qq,
+                'ts' => time()
+            ];
+        }
+        save_json('sponsors', $list);
+        json_response(0, ['sponsors' => sponsors_all()], 'ok');
+    }
+    if ($action === 'delete_sponsor') {
+        $id = clean_text($_POST['id'] ?? '', 40);
+        $list = array_values(array_filter(load_json('sponsors', []), function ($s) use ($id) {
+            return (string)($s['id'] ?? '') !== $id;
+        }));
+        save_json('sponsors', $list);
+        json_response(0, ['sponsors' => sponsors_all()], 'ok');
+    }
     if ($action === 'push_send') {
+        if (!function_exists('push_enqueue')) json_response(1, null, '推送模块未安装');
         $title = clean_text($_POST['title'] ?? '', 120);
         $body  = clean_text($_POST['body'] ?? '', 500);
         $appId = (int)($_POST['app_id'] ?? 0);
@@ -159,6 +248,7 @@ if ($source === 'admin') {
         json_response(0, ['item' => $item, 'delivery' => $delivery], 'ok');
     }
     if ($action === 'push_devices') {
+        if (!function_exists('push_devices')) json_response(1, null, '推送模块未安装');
         $list = [];
         foreach (push_devices() as $d) {
             $list[] = [
@@ -171,9 +261,11 @@ if ($source === 'admin') {
             ];
         }
         usort($list, function($a, $b) { return ($b['last_seen'] ?? 0) - ($a['last_seen'] ?? 0); });
-        json_response(0, ['devices' => $list, 'total' => count($list), 'apns' => PUSH_APNS_ENABLED]);
+        $apns = defined('PUSH_APNS_ENABLED') && PUSH_APNS_ENABLED;
+        json_response(0, ['devices' => $list, 'total' => count($list), 'apns' => $apns]);
     }
     if ($action === 'push_delete_device') {
+        if (!function_exists('push_save_devices')) json_response(1, null, '推送模块未安装');
         $token = strtolower(trim((string)($_POST['token'] ?? '')));
         $list = array_values(array_filter(push_devices(), function($d) use ($token) {
             return ($d['token'] ?? '') !== $token;
@@ -186,6 +278,7 @@ if ($source === 'admin') {
         json_response(0, null, 'ok');
     }
     if ($action === 'push_preview') {
+        if (!function_exists('push_messages')) json_response(1, null, '推送模块未安装');
         json_response(0, ['messages' => array_slice(push_messages(), 0, 20)]);
     }
     if ($action === 'get_data') {
